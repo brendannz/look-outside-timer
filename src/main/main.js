@@ -34,9 +34,23 @@ app.on('second-instance', (_event, argv) => {
 // Tray app: closing the settings window must not quit.
 app.on('window-all-closed', () => {});
 
+// In a packaged build the icon lives inside app.asar, and electron-builder also
+// unpacks it to app.asar.unpacked. Try both, and reject an image that failed to
+// decode: a broken tray icon renders as nothing at all rather than as an error,
+// so it is worth being explicit about.
 function trayIcon() {
-  if (fs.existsSync(ICON_PATH)) return nativeImage.createFromPath(ICON_PATH);
-  console.warn('build/icon.ico missing — run "npm run icon"');
+  const candidates = [
+    ICON_PATH,
+    ICON_PATH.replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`)
+  ];
+
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) continue;
+    const image = nativeImage.createFromPath(candidate);
+    if (!image.isEmpty()) return image;
+  }
+
+  console.warn(`Tray icon unavailable (tried: ${candidates.join(' , ')}) — run "npm run icon"`);
   return nativeImage.createEmpty();
 }
 
