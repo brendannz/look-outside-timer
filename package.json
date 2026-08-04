@@ -1,0 +1,51 @@
+{
+  "name": "look-outside-timer",
+  "productName": "Look Outside Timer",
+  "version": "1.0.0",
+  "description": "Eye-break reminder that respects your idle time and never interrupts a call.",
+  "main": "src/main/main.js",
+  "author": "Brendan Millar",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "icon": "node scripts/gen-icon.js",
+    "start": "electron .",
+    "dist": "npm run icon && electron-builder --win",
+    "pack": "npm run icon && electron-builder --win --dir",
+    "test": "electron scripts/selftest.js",
+    "autostart:on": "node scripts/autostart.js on",
+    "autostart:off": "node scripts/autostart.js off",
+    "autostart:status": "node scripts/autostart.js status",
+    "preview": "electron . --preview"
+  },
+  "build": {
+    "appId": "com.brendanmillar.lookoutsidetimer",
+    "productName": "Look Outside Timer",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.ico"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "LookOutsideTimer-Setup-${version}.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  }
+}

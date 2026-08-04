@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Break</title>
+<style>
+  :root {
+    --ink: #f2f6fb;
+    --muted: rgba(242, 246, 251, 0.55);
+    --line: rgba(242, 246, 251, 0.16);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    cursor: default;
+    user-select: none;
+    font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+  }
+
+  .scrim {
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 50% 42%, rgba(30, 46, 66, 0.94) 0%, rgba(7, 10, 15, 0.96) 70%);
+    animation: fade 420ms ease-out;
+  }
+
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  main {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6vh 8vw;
+    text-align: center;
+    animation: rise 520ms cubic-bezier(0.16, 0.9, 0.3, 1);
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .eyebrow {
+    margin: 0;
+    font-size: clamp(13px, 1.5vw, 19px);
+    font-weight: 600;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-left: 0.42em;
+  }
+
+  .count {
+    margin: 6px 0 2px;
+    /* Capped against height as well as width so short windows cannot push the
+       quote and buttons off-screen. */
+    font-size: clamp(72px, min(15vw, 26vh), 210px);
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 8px 60px rgba(120, 190, 255, 0.18);
+  }
+
+  .hint {
+    margin: 0 0 clamp(28px, 5vh, 56px);
+    font-size: clamp(15px, 1.6vw, 22px);
+    color: var(--muted);
+  }
+
+  blockquote {
+    margin: 0;
+    max-width: 22ch;
+    max-width: min(60ch, 78vw);
+    font-size: clamp(17px, 2vw, 28px);
+    font-weight: 300;
+    line-height: 1.5;
+    color: rgba(242, 246, 251, 0.9);
+  }
+
+  blockquote cite {
+    display: block;
+    margin-top: 14px;
+    font-size: 0.62em;
+    font-style: normal;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+
+  .actions {
+    display: flex;
+    gap: 14px;
+    margin-top: clamp(30px, 6vh, 64px);
+  }
+
+  button {
+    position: relative;
+    overflow: hidden;
+    min-width: 128px;
+    padding: 13px 26px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 160ms, border-color 160ms, opacity 260ms;
+  }
+
+  button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(242, 246, 251, 0.4);
+  }
+
+  button:disabled {
+    opacity: 0.38;
+    cursor: default;
+  }
+
+  /* Fills left-to-right over the lock period so the wait is visible, not just felt. */
+  button .fill {
+    position: absolute;
+    inset: 0;
+    width: 0;
+    background: rgba(255, 255, 255, 0.13);
+  }
+
+  button.arming .fill { animation: arm linear forwards; }
+
+  @keyframes arm { to { width: 100%; } }
+
+  button .label { position: relative; }
+
+  .unlock {
+    margin: 16px 0 0;
+    height: 1.2em;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .progress {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.09);
+  }
+
+  .progress .bar {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #6fb3f0, #9ee7b8);
+    transition: width 1s linear;
+  }
+
+  /* Secondary monitors dim and show the countdown, nothing to interact with. */
+  body.secondary blockquote,
+  body.secondary .actions,
+  body.secondary .unlock { display: none; }
+</style>
+</head>
+<body>
+  <div class="scrim"></div>
+
+  <main>
+    <p class="eyebrow">Look outside</p>
+    <div class="count" id="count">0:00</div>
+    <p class="hint">Focus on something at least 6 metres away</p>
+
+    <blockquote id="quote">
+      <span id="quote-text"></span>
+      <cite id="quote-author"></cite>
+    </blockquote>
+
+    <div class="actions">
+      <button id="skip" disabled><span class="fill"></span><span class="label">Skip</span></button>
+      <button id="postpone" disabled><span class="fill"></span><span class="label">Postpone</span></button>
+    </div>
+
+    <p class="unlock" id="unlock"></p>
+  </main>
+
+  <div class="progress"><div class="bar" id="bar"></div></div>
+
+<script>
+  const isPrimary = new URLSearchParams(location.search).get('primary') === '1';
+  if (!isPrimary) document.body.classList.add('secondary');
+
+  const els = {
+    count: document.getElementById('count'),
+    quote: document.getElementById('quote'),
+    quoteText: document.getElementById('quote-text'),
+    quoteAuthor: document.getElementById('quote-author'),
+    skip: document.getElementById('skip'),
+    postpone: document.getElementById('postpone'),
+    unlock: document.getElementById('unlock'),
+    bar: document.getElementById('bar')
+  };
+
+  let unlocked = false;
+  let total = 60;
+
+  const fmt = (s) => {
+    const v = Math.max(0, Math.round(s));
+    return Math.floor(v / 60) + ':' + String(v % 60).padStart(2, '0');
+  };
+
+  function render(remaining) {
+    els.count.textContent = fmt(remaining);
+    const done = total > 0 ? (total - remaining) / total : 0;
+    els.bar.style.width = Math.min(100, Math.max(0, done * 100)) + '%';
+  }
+
+  function armButtons(seconds) {
+    if (!isPrimary) return;
+
+    if (seconds <= 0) {
+      unlock();
+      return;
+    }
+
+    let left = seconds;
+    els.unlock.textContent = `Skip available in ${left}s`;
+
+    for (const btn of [els.skip, els.postpone]) {
+      btn.style.setProperty('animation-duration', seconds + 's');
+      btn.classList.add('arming');
+    }
+
+    const countdown = setInterval(() => {
+      left -= 1;
+      if (left > 0) {
+        els.unlock.textContent = `Skip available in ${left}s`;
+      } else {
+        clearInterval(countdown);
+        unlock();
+      }
+    }, 1000);
+  }
+
+  function unlock() {
+    unlocked = true;
+    els.skip.disabled = false;
+    els.postpone.disabled = false;
+    els.unlock.textContent = 'Esc to skip';
+  }
+
+  window.breaktimer.onRestData((data) => {
+    total = data.total;
+    render(data.remaining);
+
+    if (data.quote) {
+      els.quoteText.textContent = data.quote.text;
+      els.quoteAuthor.textContent = data.quote.author ? '— ' + data.quote.author : '';
+    } else {
+      els.quote.style.visibility = 'hidden';
+    }
+
+    els.postpone.querySelector('.label').textContent = `Postpone ${data.postponeMinutes} min`;
+    armButtons(Number(data.skipUnlockSeconds) || 0);
+  });
+
+  window.breaktimer.onRestTick((data) => {
+    total = data.total;
+    render(data.remaining);
+  });
+
+  els.skip.addEventListener('click', () => unlocked && window.breaktimer.skip());
+  els.postpone.addEventListener('click', () => unlocked && window.breaktimer.postpone());
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && unlocked) window.breaktimer.skip();
+  });
+</script>
+</body>
+</html>

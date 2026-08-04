@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Look Outside Timer</title>
+<style>
+  :root {
+    --bg: #12161d;
+    --panel: #1a2029;
+    --line: rgba(255, 255, 255, 0.09);
+    --ink: #e9eff6;
+    --muted: rgba(233, 239, 246, 0.55);
+    --accent: #6fb3f0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 24px 26px 32px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+  }
+
+  h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+
+  .status {
+    margin: 0 0 22px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .status b { color: var(--ink); font-weight: 600; }
+
+  section {
+    margin-bottom: 20px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+  }
+
+  h2 {
+    margin: 0 0 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 7px 0;
+  }
+
+  .row label { flex: 1; }
+
+  .row .note {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  input[type="number"] {
+    width: 92px;
+    padding: 7px 10px;
+    font: inherit;
+    color: var(--ink);
+    background: #0e1218;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    text-align: right;
+  }
+
+  input[type="number"]:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--accent);
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 118px;
+    padding: 10px 12px;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 13px;
+    color: var(--ink);
+    background: #0e1218;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    resize: vertical;
+  }
+
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+
+  .checks .row { padding: 5px 0; }
+
+  .bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+    padding-top: 6px;
+    background: linear-gradient(transparent, var(--bg) 30%);
+  }
+
+  button {
+    padding: 10px 18px;
+    font: inherit;
+    font-weight: 600;
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    cursor: pointer;
+  }
+
+  button:hover { background: rgba(255, 255, 255, 0.14); }
+
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #08111b;
+  }
+
+  button.primary:hover { filter: brightness(1.1); }
+
+  .saved {
+    color: #9ee7b8;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+
+  .saved.show { opacity: 1; }
+
+  .detected {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--muted);
+    min-height: 1.2em;
+  }
+</style>
+</head>
+<body>
+  <h1>Look Outside Timer</h1>
+  <p class="status" id="status">Loading…</p>
+
+  <section>
+    <h2>Timing</h2>
+    <div class="row">
+      <label for="workMinutes">Work period
+        <span class="note">How long you focus before a break is due.</span>
+      </label>
+      <input type="number" id="workMinutes" min="1" max="180" step="1" />
+    </div>
+    <div class="row">
+      <label for="restSeconds">Rest period
+        <span class="note">Seconds the overlay stays up.</span>
+      </label>
+      <input type="number" id="restSeconds" min="5" max="900" step="5" />
+    </div>
+    <div class="row">
+      <label for="idleResetSeconds">Idle reset
+        <span class="note">Seconds away from the keyboard that count as a break and rewind the work period.</span>
+      </label>
+      <input type="number" id="idleResetSeconds" min="10" max="3600" step="10" />
+    </div>
+  </section>
+
+  <section>
+    <h2>Interruption style</h2>
+    <div class="row">
+      <label for="prewarnSeconds">Heads-up warning
+        <span class="note">Seconds of notice before the overlay appears. 0 disables it.</span>
+      </label>
+      <input type="number" id="prewarnSeconds" min="0" max="300" step="5" />
+    </div>
+    <div class="row">
+      <label for="skipUnlockSeconds">Skip unlocks after
+        <span class="note">Seconds before Skip and Postpone become clickable.</span>
+      </label>
+      <input type="number" id="skipUnlockSeconds" min="0" max="60" step="1" />
+    </div>
+    <div class="row">
+      <label for="postponeMinutes">Postpone length
+        <span class="note">Minutes added when you postpone.</span>
+      </label>
+      <input type="number" id="postponeMinutes" min="1" max="60" step="1" />
+    </div>
+    <div class="row">
+      <label for="playSound">Play a sound when a break starts</label>
+      <input type="checkbox" id="playSound" />
+    </div>
+  </section>
+
+  <section>
+    <h2>Calls</h2>
+    <div class="row">
+      <label for="pauseDuringCalls">Pause while I am on a call
+        <span class="note">Uses Windows' own record of which apps hold the mic or camera.</span>
+      </label>
+      <input type="checkbox" id="pauseDuringCalls" />
+    </div>
+    <div class="row">
+      <label for="watchWebcam">Also treat camera use as a call</label>
+      <input type="checkbox" id="watchWebcam" />
+    </div>
+    <div class="row">
+      <label for="postCallGraceSeconds">Grace after a call ends
+        <span class="note">Seconds before an overdue break fires once you hang up.</span>
+      </label>
+      <input type="number" id="postCallGraceSeconds" min="0" max="600" step="5" />
+    </div>
+    <div style="padding-top:10px">
+      <label for="callApps" style="display:block;margin-bottom:8px">
+        Apps that count as a call
+        <span class="note">One per line. Matched against the app or executable name.</span>
+      </label>
+      <textarea id="callApps" spellcheck="false"></textarea>
+      <div class="detected" id="detected"></div>
+      <button type="button" id="detect" style="margin-top:10px">What is using my mic or camera right now?</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Quotes</h2>
+    <div class="checks">
+      <div class="row"><label for="cat-funny">Funny</label><input type="checkbox" id="cat-funny" /></div>
+      <div class="row"><label for="cat-interesting">Interesting</label><input type="checkbox" id="cat-interesting" /></div>
+      <div class="row"><label for="cat-parenting">Parenting</label><input type="checkbox" id="cat-parenting" /></div>
+      <div class="row"><label for="cat-product">Product management</label><input type="checkbox" id="cat-product" /></div>
+    </div>
+    <div class="detected" id="quote-stats"></div>
+  </section>
+
+  <section>
+    <h2>Startup</h2>
+    <div class="row">
+      <label for="startAtLogin">Start automatically when I sign in
+        <span class="note">Running from source, this manages a shortcut in your Startup folder.</span>
+      </label>
+      <input type="checkbox" id="startAtLogin" />
+    </div>
+  </section>
+
+  <div class="bar">
+    <button class="primary" id="save">Save</button>
+    <button id="preview">Preview a break</button>
+    <button id="close">Close</button>
+    <span class="saved" id="saved">Saved</span>
+  </div>
+
+<script>
+  const api = window.breaktimer;
+
+  const NUMBERS = [
+    'workMinutes', 'restSeconds', 'idleResetSeconds',
+    'prewarnSeconds', 'skipUnlockSeconds', 'postponeMinutes',
+    'postCallGraceSeconds'
+  ];
+  const FLAGS = ['playSound', 'pauseDuringCalls', 'watchWebcam', 'startAtLogin'];
+  const CATEGORIES = ['funny', 'interesting', 'parenting', 'product'];
+
+  const $ = (id) => document.getElementById(id);
+
+  async function loadConfig() {
+    const cfg = await api.getConfig();
+    for (const key of NUMBERS) $(key).value = cfg[key];
+    for (const key of FLAGS) $(key).checked = !!cfg[key];
+    for (const cat of CATEGORIES) $('cat-' + cat).checked = !!cfg.categories[cat];
+    $('callApps').value = (cfg.callApps || []).join('\n');
+  }
+
+  async function save() {
+    const patch = { categories: {}, callApps: [] };
+    for (const key of NUMBERS) patch[key] = Number($(key).value);
+    for (const key of FLAGS) patch[key] = $(key).checked;
+    for (const cat of CATEGORIES) patch.categories[cat] = $('cat-' + cat).checked;
+    patch.callApps = $('callApps').value
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    await api.saveConfig(patch);
+    $('saved').classList.add('show');
+    setTimeout(() => $('saved').classList.remove('show'), 1600);
+    refreshQuoteStats();
+  }
+
+  const fmt = (s) => Math.floor(s / 60) + ':' + String(Math.round(s) % 60).padStart(2, '0');
+
+  async function refreshStatus() {
+    const s = await api.getStatus();
+    let text;
+    if (s.state === 'rest') {
+      text = `<b>Resting</b> — ${fmt(s.restRemaining)} remaining`;
+    } else if (s.paused) {
+      text = `<b>Paused</b> until ${new Date(s.pausedUntil).toLocaleTimeString()}`;
+    } else if (s.inCall) {
+      text = `<b>Held</b> — call detected (${s.callApps.join(', ')})`;
+    } else {
+      text = `<b>Next break in ${fmt(s.secondsUntilBreak)}</b> · idle ${s.idleSeconds}s`;
+    }
+    $('status').innerHTML = text;
+  }
+
+  async function refreshQuoteStats() {
+    const stats = await api.quoteStats();
+    const enabled = CATEGORIES.filter((c) => $('cat-' + c).checked);
+    const count = enabled.reduce((sum, c) => sum + (stats.byCategory[c] || 0), 0);
+    $('quote-stats').textContent =
+      `${count} quotes in the active pool of ${stats.total}. ` +
+      `Roughly ${Math.max(1, Math.floor(count * 0.6))} breaks before any repeat.`;
+  }
+
+  $('save').addEventListener('click', save);
+  $('close').addEventListener('click', () => api.closeWindow());
+  $('preview').addEventListener('click', () => api.previewBreak());
+
+  $('detect').addEventListener('click', async () => {
+    $('detected').textContent = 'Checking…';
+    const apps = await api.detectMicApps();
+    $('detected').textContent = apps.length
+      ? 'Currently active: ' + apps.join(', ')
+      : 'Nothing is using the microphone or camera right now.';
+  });
+
+  for (const cat of CATEGORIES) {
+    $('cat-' + cat).addEventListener('change', refreshQuoteStats);
+  }
+
+  loadConfig().then(refreshQuoteStats);
+  refreshStatus();
+  setInterval(refreshStatus, 1000);
+</script>
+</body>
+</html>
