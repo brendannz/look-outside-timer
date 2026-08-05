@@ -199,6 +199,25 @@ function testManualPause() {
   check('break fires after resuming', t.state, REST);
 }
 
+function testPostponeDuringPrewarnDismissesToast() {
+  console.log('\n# postponing from the tray menu while the heads-up toast is up dismisses it');
+  const t = makeTimer();
+  fakeIdle = 0;
+
+  advance(t, 91); // past the 30s-out prewarn threshold (target 120s)
+  check('toast is showing', saw(t, 'prewarn'), true);
+  check('still in the work state', t.state, WORK);
+
+  // Simulate the tray menu's "Postpone" item, reachable at any time — not the
+  // overlay's own button, which only exists once state is REST.
+  t.events.length = 0;
+  t.postponeBreak();
+  check('postponing tells the toast to close', saw(t, 'prewarn-cancel'), true);
+
+  advance(t, 1);
+  check('no immediate re-trigger the instant after postponing', t.state, WORK);
+}
+
 // --- quotes ---------------------------------------------------------------
 
 function testQuotes() {
@@ -254,6 +273,7 @@ app.whenReady().then(async () => {
   testCallDuringRestEndsIt();
   testSkipAndPostpone();
   testManualPause();
+  testPostponeDuringPrewarnDismissesToast();
   testQuotes();
   await testCallDetection();
 

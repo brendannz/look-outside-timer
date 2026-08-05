@@ -169,7 +169,12 @@ class BreakTimer extends EventEmitter {
     const delay = Math.max(60, cfg.postponeMinutes * 60);
     if (this.state === REST) this._endRest('postponed');
     this.workElapsed = Math.max(0, this.workTarget() - delay);
-    this.prewarnShown = false;
+    // Postpone is also reachable from the tray menu while a prewarn toast is
+    // still counting down (not just from the overlay's own button, where the
+    // toast is already gone by the time Postpone is clickable). Go through
+    // _cancelPrewarn so that case tells the toast window to close too, rather
+    // than just clearing the flag and leaving it orphaned on screen.
+    this._cancelPrewarn();
   }
 
   pauseFor(minutes) {
