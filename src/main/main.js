@@ -263,14 +263,10 @@ app.whenReady().then(() => {
   timer.start();
   startCallPolling();
 
-  // Launched by hand rather than by the login item? Show the settings window so
-  // there is visible confirmation it is running.
-  const launchedHidden =
-    process.argv.includes('--hidden') ||
-    app.getLoginItemSettings().wasOpenedAtLogin;
-  if (!launchedHidden) windows.showSettings(ICON_PATH);
+  // Always starts straight to the tray. Settings opens only on request —
+  // clicking the tray icon, or its "Settings…" menu item — never on its own.
 
-  // Let the settings window paint first, so the overlay is seen arriving over it.
+  // Small delay so the tray and timer are fully wired before firing a preview break.
   if (process.argv.includes('--preview')) {
     setTimeout(() => timer.takeBreakNow(), 900);
   }
