@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('breaktimer', {
   postpone: () => ipcRenderer.send('rest-postpone'),
 
   // Settings
+  getVersion: () => ipcRenderer.invoke('app:version'),
   getConfig: () => ipcRenderer.invoke('config:get'),
   saveConfig: (patch) => ipcRenderer.invoke('config:save', patch),
   getStatus: () => ipcRenderer.invoke('status:get'),

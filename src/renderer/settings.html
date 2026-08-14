@@ -24,7 +24,20 @@
     font-size: 14px;
   }
 
-  h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+  h1 {
+    margin: 0 0 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .version {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
 
   .status {
     margin: 0 0 22px;
@@ -160,7 +173,7 @@
 </style>
 </head>
 <body>
-  <h1>Look Outside Timer</h1>
+  <h1>Look Outside Timer <span class="version" id="version"></span></h1>
   <p class="status" id="status">Loading…</p>
 
   <section>
@@ -346,6 +359,8 @@
   for (const cat of CATEGORIES) {
     $('cat-' + cat).addEventListener('change', refreshQuoteStats);
   }
+
+  api.getVersion().then((v) => { $('version').textContent = `v${v}`; });
 
   loadConfig().then(refreshQuoteStats);
   refreshStatus();

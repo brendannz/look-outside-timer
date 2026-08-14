@@ -230,6 +230,8 @@ function registerIpc() {
     if (win && !win.isDestroyed()) win.close();
   });
 
+  ipcMain.handle('app:version', () => app.getVersion());
+
   ipcMain.handle('config:get', () => config.load());
 
   ipcMain.handle('config:save', (_e, patch) => {
