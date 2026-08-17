@@ -19,8 +19,8 @@
     height: 100%;
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 0 20px;
+    gap: 12px;
+    padding: 0 16px;
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(18, 24, 33, 0.93);
@@ -36,21 +36,39 @@
 
   .dot {
     flex: none;
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 9px;
     background: linear-gradient(150deg, #6fb3f0, #9ee7b8);
   }
 
-  .text { line-height: 1.35; }
+  .text { flex: 1; min-width: 0; line-height: 1.35; }
 
-  .title { font-size: 15px; font-weight: 600; }
+  .title { font-size: 14.5px; font-weight: 600; }
 
   .sub {
-    font-size: 12.5px;
+    font-size: 12px;
     color: rgba(238, 243, 249, 0.6);
     font-variant-numeric: tabular-nums;
   }
+
+  button {
+    flex: none;
+    padding: 8px 13px;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #eef3f9;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 140ms, opacity 140ms;
+  }
+
+  button:hover { background: rgba(255, 255, 255, 0.16); }
+
+  button:disabled { opacity: 0.5; cursor: default; }
 </style>
 </head>
 <body>
@@ -60,10 +78,12 @@
       <div class="title">Time to look outside</div>
       <div class="sub" id="sub">Break starts shortly</div>
     </div>
+    <button id="postpone" type="button">Postpone</button>
   </div>
 
 <script>
   const sub = document.getElementById('sub');
+  const postponeBtn = document.getElementById('postpone');
   let timerId = null;
 
   window.breaktimer.onPrewarn((data) => {
@@ -80,6 +100,14 @@
       paint();
       if (left <= 0) clearInterval(timerId);
     }, 1000);
+
+    if (data.postponeMinutes) postponeBtn.textContent = `Postpone ${data.postponeMinutes} min`;
+    postponeBtn.disabled = false;
+  });
+
+  postponeBtn.addEventListener('click', () => {
+    postponeBtn.disabled = true; // the toast is about to close; just guards against a double-click
+    window.breaktimer.postpone();
   });
 </script>
 </body>

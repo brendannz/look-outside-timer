@@ -80,8 +80,10 @@ function destroyOverlays() {
 
 // --- pre-warning toast ----------------------------------------------------
 
-// Deliberately unfocusable and click-through: it must never swallow a
-// keystroke or a click while you are mid-sentence.
+// Carries a Postpone button, so it can no longer be click-through the way it
+// used to be — but it still opens via showInactive() below, so it never
+// steals focus just by appearing. Only a deliberate click on it grabs focus,
+// same as any normal notification.
 function showPrewarn(payload) {
   if (prewarnWin && !prewarnWin.isDestroyed()) {
     prewarnWin.webContents.send('prewarn-data', payload);
@@ -89,7 +91,7 @@ function showPrewarn(payload) {
   }
 
   const area = screen.getPrimaryDisplay().workArea;
-  const width = 340;
+  const width = 360;
   const height = 96;
 
   prewarnWin = new BrowserWindow({
@@ -103,14 +105,12 @@ function showPrewarn(payload) {
     movable: false,
     skipTaskbar: true,
     alwaysOnTop: true,
-    focusable: false,
     show: false,
     backgroundColor: '#00000000',
     webPreferences
   });
 
   prewarnWin.setAlwaysOnTop(true, 'screen-saver');
-  prewarnWin.setIgnoreMouseEvents(true);
   prewarnWin.loadFile(path.join(RENDERER, 'prewarn.html'));
 
   prewarnWin.webContents.once('did-finish-load', () => {

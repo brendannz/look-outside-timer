@@ -196,7 +196,7 @@ function wireTimer() {
   });
 
   timer.on('prewarn', (secondsLeft) => {
-    windows.showPrewarn({ seconds: secondsLeft });
+    windows.showPrewarn({ seconds: secondsLeft, postponeMinutes: config.load().postponeMinutes });
   });
 
   timer.on('prewarn-cancel', () => windows.hidePrewarn());
