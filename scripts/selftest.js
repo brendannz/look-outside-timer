@@ -56,6 +56,7 @@ function makeTimer() {
 
 const advance = (t, n) => { for (let i = 0; i < n; i++) t._tick(); };
 const saw = (t, name) => t.events.some((e) => e.name === name);
+const lastReason = (t) => [...t.events].reverse().find((e) => e.name === 'rest-end')?.arg;
 
 // --- scheduling -----------------------------------------------------------
 
@@ -88,6 +89,9 @@ function testRestCompletes() {
   check('back to work', t.state, WORK);
   check('work period restarted', t.workElapsed, 0);
   check('rest-end emitted', saw(t, 'rest-end'), true);
+  // main.js only plays the end-of-break chime when reason is 'completed' —
+  // this is the value it switches on.
+  check('reason is "completed" for a natural finish', lastReason(t), 'completed');
 }
 
 function testIdleResetsWorkPeriod() {
@@ -159,6 +163,9 @@ function testCallDuringRestEndsIt() {
   t.setCallState(true, ['MSTeams']);
   check('overlay dismissed for the call', t.state, WORK);
   check('break still owed', t.workElapsed, 120);
+  // Cut short by a call, not a natural finish — should not read as 'completed'
+  // (main.js would otherwise play the end-of-break chime for an interrupted break).
+  check('reason reflects the interruption, not completion', lastReason(t), 'call');
 
   t.setCallState(false, []);
   advance(t, 30);
@@ -173,11 +180,13 @@ function testSkipAndPostpone() {
   t.skipBreak();
   check('skipping returns to work', t.state, WORK);
   check('skipping restarts the work period', t.workElapsed, 0);
+  check('skip is not reported as a natural completion', lastReason(t), 'skipped');
 
   const t2 = makeTimer();
   advance(t2, 120);
   t2.postponeBreak();
   check('postponing leaves rest', t2.state, WORK);
+  check('postpone is not reported as a natural completion', lastReason(t2), 'postponed');
   ok('postpone pushes the break out',
     t2.workElapsed <= Math.max(0, 120 - CFG.postponeMinutes * 60),
     `workElapsed=${t2.workElapsed}`);

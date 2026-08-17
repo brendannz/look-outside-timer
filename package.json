@@ -1,7 +1,7 @@
 {
   "name": "look-outside-timer",
   "productName": "Look Outside Timer",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Eye-break reminder that respects your idle time and never interrupts a call.",
   "main": "src/main/main.js",
   "author": "Brendan Millar",

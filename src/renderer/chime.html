@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Chime</title></head>
+<body>
+<script>
+  // Synthesized rather than an embedded audio file, to match the rest of the
+  // app (the tray icon is drawn in code too) — no binary asset to bundle.
+  //
+  // A single sine tone reads as a flat beep; layering a quiet octave overtone
+  // on top of the fundamental gives it a rounder, bell-like "ding" instead.
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const now = ctx.currentTime;
+
+  function tone(freq, peakGain, duration) {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(peakGain, now + 0.008); // quick attack
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration); // soft decay
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + duration + 0.05);
+  }
+
+  tone(987.77, 0.22, 0.9); // B5, fundamental
+  tone(1975.53, 0.07, 0.6); // B6, quiet overtone
+
+  // This window exists solely to play the chime; close once it's done.
+  setTimeout(() => window.close(), 1100);
+</script>
+</body>
+</html>

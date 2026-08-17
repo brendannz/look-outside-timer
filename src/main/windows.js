@@ -128,6 +128,30 @@ function hidePrewarn() {
   prewarnWin = null;
 }
 
+// --- end-of-break chime ----------------------------------------------------
+
+// A throwaway, invisible window whose only job is to run chime.html's Web
+// Audio tone and then close itself. Electron's default autoplay policy
+// permits this without a user gesture, unlike a regular web page.
+function playChime() {
+  const win = new BrowserWindow({
+    width: 1,
+    height: 1,
+    show: false,
+    skipTaskbar: true,
+    focusable: false,
+    webPreferences
+  });
+
+  win.loadFile(path.join(RENDERER, 'chime.html'));
+
+  // Safety net in case the renderer's own window.close() doesn't fire.
+  const killTimer = setTimeout(() => {
+    if (!win.isDestroyed()) win.destroy();
+  }, 3000);
+  win.on('closed', () => clearTimeout(killTimer));
+}
+
 // --- settings -------------------------------------------------------------
 
 function showSettings(iconPath) {
@@ -167,6 +191,7 @@ module.exports = {
   destroyOverlays,
   showPrewarn,
   hidePrewarn,
+  playChime,
   showSettings,
   isSettingsWindow
 };

@@ -217,7 +217,13 @@ function wireTimer() {
     if (cfg.playSound) shell.beep();
   });
 
-  timer.on('rest-end', () => windows.destroyOverlays());
+  timer.on('rest-end', (reason) => {
+    windows.destroyOverlays();
+    // Only the break running its full course gets a chime — skipping,
+    // postponing, or a call cutting it short are all choices you already
+    // know about, so a sound there would just be noise.
+    if (config.load().playSound && reason === 'completed') windows.playChime();
+  });
 }
 
 function registerIpc() {
