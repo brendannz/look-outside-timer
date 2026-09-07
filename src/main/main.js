@@ -23,10 +23,16 @@ if (!app.requestSingleInstanceLock()) {
 
 // Relaunching with --preview fires a break in the copy that is already running,
 // which is how you test the overlay without waiting out a work period.
+//
+// Two autostart mechanisms (a login-item registry entry for packaged builds,
+// a Startup-folder shortcut for running from source) can both be registered
+// at once, so boot can launch this app twice. The loser of the single-instance
+// race lands here with --hidden — that's an autostart launch, not a user
+// double-clicking the icon, so it must stay silent rather than popping Settings.
 app.on('second-instance', (_event, argv) => {
   if (argv.includes('--preview')) {
     if (timer) timer.takeBreakNow();
-  } else {
+  } else if (!argv.includes('--hidden')) {
     windows.showSettings(ICON_PATH);
   }
 });
