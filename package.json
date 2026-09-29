@@ -9,6 +9,7 @@
   "private": true,
   "scripts": {
     "icon": "node scripts/gen-icon.js",
+    "store-logos": "node scripts/gen-store-logos.js",
     "start": "electron .",
     "dist": "npm run icon && electron-builder --win",
     "dist:store": "npm run icon && electron-builder --win appx",
