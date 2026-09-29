@@ -135,6 +135,11 @@ requests, `v*` tags, or manually) and download the `.appx` from the run's
 artifacts. In a Store install, "Start automatically" drives a manifest
 StartupTask (`src/main/storeStartup.js`) rather than a Startup shortcut.
 
+The listing's logos (Partner Center → Store listings → Store logos) live in
+`store/`: a 300×300 app tile icon, 2160×2160 box art and 1440×2160 poster art.
+They're drawn from the same icon as the app; `npm run store-logos` regenerates
+them.
+
 ## Configuration
 
 Settings are stored at `%APPDATA%\Look Outside Timer\config.json` (tray menu →

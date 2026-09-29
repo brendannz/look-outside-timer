@@ -226,14 +226,33 @@ function encodePng(width, height, rgba) {
   ]);
 }
 
-// The icon at `iconSize`, centred on a transparent width x height canvas.
-function renderTile(width, height, iconSize) {
+// The icon at `iconSize`, centred on a width x height canvas: transparent, or
+// filled with `bg` ([r, g, b]) with the icon alpha-blended over it.
+function renderTile(width, height, iconSize, bg = null) {
   const icon = renderRgba(iconSize);
   const out = Buffer.alloc(width * height * 4);
+  if (bg) {
+    for (let i = 0; i < width * height; i++) {
+      out[i * 4] = bg[0];
+      out[i * 4 + 1] = bg[1];
+      out[i * 4 + 2] = bg[2];
+      out[i * 4 + 3] = 255;
+    }
+  }
+
   const ox = Math.floor((width - iconSize) / 2);
   const oy = Math.floor((height - iconSize) / 2);
   for (let y = 0; y < iconSize; y++) {
-    icon.copy(out, ((oy + y) * width + ox) * 4, y * iconSize * 4, (y + 1) * iconSize * 4);
+    if (!bg) {
+      icon.copy(out, ((oy + y) * width + ox) * 4, y * iconSize * 4, (y + 1) * iconSize * 4);
+      continue;
+    }
+    for (let x = 0; x < iconSize; x++) {
+      const s = (y * iconSize + x) * 4;
+      const d = ((oy + y) * width + ox + x) * 4;
+      const a = icon[s + 3] / 255;
+      for (let c = 0; c < 3; c++) out[d + c] = Math.round(icon[s + c] * a + out[d + c] * (1 - a));
+    }
   }
   return encodePng(width, height, out);
 }
@@ -249,15 +268,20 @@ const TILES = [
   ['Wide310x150Logo.png', 310, 150, 100]
 ];
 
-const outDir = path.join(__dirname, '..', 'build');
-fs.mkdirSync(outDir, { recursive: true });
-const out = path.join(outDir, 'icon.ico');
-fs.writeFileSync(out, buildIco(SIZES));
-console.log(`Wrote ${out} (${SIZES.join(', ')} px)`);
+// scripts/gen-store-logos.js reuses renderTile, so only write when run directly.
+if (require.main === module) {
+  const outDir = path.join(__dirname, '..', 'build');
+  fs.mkdirSync(outDir, { recursive: true });
+  const out = path.join(outDir, 'icon.ico');
+  fs.writeFileSync(out, buildIco(SIZES));
+  console.log(`Wrote ${out} (${SIZES.join(', ')} px)`);
 
-const appxDir = path.join(outDir, 'appx');
-fs.mkdirSync(appxDir, { recursive: true });
-for (const [name, width, height, iconSize] of TILES) {
-  fs.writeFileSync(path.join(appxDir, name), renderTile(width, height, iconSize));
+  const appxDir = path.join(outDir, 'appx');
+  fs.mkdirSync(appxDir, { recursive: true });
+  for (const [name, width, height, iconSize] of TILES) {
+    fs.writeFileSync(path.join(appxDir, name), renderTile(width, height, iconSize));
+  }
+  console.log(`Wrote ${TILES.length} Store tile images to ${appxDir}`);
 }
-console.log(`Wrote ${TILES.length} Store tile images to ${appxDir}`);
+
+module.exports = { renderTile };
