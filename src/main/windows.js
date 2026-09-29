@@ -164,7 +164,7 @@ function showSettings(iconPath) {
   settingsWin = new BrowserWindow({
     width: 640,
     height: 820,
-    title: 'Look Outside Timer',
+    title: 'Look Outside Reminder',
     icon: iconPath,
     autoHideMenuBar: true,
     backgroundColor: '#12161d',

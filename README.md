@@ -116,6 +116,25 @@ sign-in. Roughly 95 MB.
 > machine requires either code-signing with a reputable certificate or turning
 > the feature off, which cannot be re-enabled without resetting Windows.
 
+## Microsoft Store package
+
+Listed in the Store as **Look Outside Reminder**. The Store build is an MSIX
+package that Microsoft signs on submission, so no certificate is needed:
+
+```bash
+npm run dist:store
+```
+
+The package identity (`build.appx.identityName`, `publisher`,
+`publisherDisplayName` in `package.json`) comes from Partner Center → the app →
+Product management → Product identity.
+
+Smart App Control blocks `makeappx.exe` on this machine, so build the package
+with the **Store package** GitHub Actions workflow instead (it runs on pull
+requests, `v*` tags, or manually) and download the `.appx` from the run's
+artifacts. In a Store install, "Start automatically" drives a manifest
+StartupTask (`src/main/storeStartup.js`) rather than a Startup shortcut.
+
 ## Configuration
 
 Settings are stored at `%APPDATA%\Look Outside Timer\config.json` (tray menu →

@@ -6,6 +6,7 @@ const config = require('./config');
 const quotes = require('./quotes');
 const callDetector = require('./callDetector');
 const autostart = require('./autostart');
+const storeStartup = require('./storeStartup');
 const { BreakTimer, REST } = require('./timer');
 const windows = require('./windows');
 
@@ -79,6 +80,17 @@ function statusLine(snap) {
 }
 
 function applyLoginItem(enabled) {
+  // Microsoft Store (MSIX) build: sign-in launch is a manifest StartupTask.
+  if (process.windowsStore) {
+    storeStartup
+      .set(!!enabled)
+      .then((state) => {
+        if (enabled && state !== 'Enabled') console.warn(`Startup task not enabled: ${state}`);
+      })
+      .catch((err) => console.error('Could not update startup task:', err.message));
+    return;
+  }
+
   if (app.isPackaged) {
     app.setLoginItemSettings({
       openAtLogin: !!enabled,
@@ -109,6 +121,29 @@ function applyLoginItem(enabled) {
   }
 }
 
+// A Store (MSIX) build's writes under %APPDATA% are redirected into the
+// package's private LocalCache. Explorer runs outside the package and doesn't
+// see that redirection, so point it at the real location. The package family
+// name is Name_PublisherId, both taken from the install folder
+// (WindowsApps\Name_Version_Arch_ResourceId_PublisherId). Falls back to the
+// plain path when anything about that doesn't hold.
+function explorerVisibleDir(dir) {
+  if (!process.windowsStore) return dir;
+  const roaming = process.env.APPDATA;
+  const local = process.env.LOCALAPPDATA;
+  const match = /[\\/]WindowsApps[\\/]([^\\/]+)/i.exec(process.execPath);
+  if (!match || !roaming || !local) return dir;
+
+  const parts = match[1].split('_');
+  if (parts.length < 5) return dir;
+  const family = `${parts[0]}_${parts[parts.length - 1]}`;
+  const relative = path.relative(roaming, dir);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) return dir;
+
+  const redirected = path.join(local, 'Packages', family, 'LocalCache', 'Roaming', relative);
+  return fs.existsSync(redirected) ? redirected : dir;
+}
+
 // Opens the folder itself rather than selecting the file inside it.
 // shell.showItemInFolder wraps SHOpenFolderAndSelectItems, which on Windows
 // silently does the wrong thing when the target is missing and can reuse an
@@ -126,7 +161,7 @@ async function openConfigFolder() {
     console.error('Could not prepare config folder:', err.message);
   }
 
-  const failure = await shell.openPath(dir);
+  const failure = await shell.openPath(explorerVisibleDir(dir));
   if (failure) console.error('Could not open config folder:', failure);
 }
 
@@ -262,13 +297,15 @@ function registerIpc() {
 }
 
 app.whenReady().then(() => {
+  // No config file yet means the app has never run (or never saved) here.
+  const firstRun = !fs.existsSync(config.configPath());
   const cfg = config.load();
   applyLoginItem(cfg.startAtLogin);
 
   timer = new BreakTimer(() => config.load());
 
   tray = new Tray(trayIcon());
-  tray.setToolTip('Look Outside Timer');
+  tray.setToolTip('Look Outside Reminder');
   tray.on('click', () => windows.showSettings(ICON_PATH));
   rebuildMenu(timer.snapshot());
 
@@ -277,8 +314,15 @@ app.whenReady().then(() => {
   timer.start();
   startCallPolling();
 
-  // Always starts straight to the tray. Settings opens only on request —
-  // clicking the tray icon, or its "Settings…" menu item — never on its own.
+  // Starts straight to the tray. Settings opens only on request — clicking
+  // the tray icon, or its "Settings…" menu item — with one exception: the
+  // very first launch, where a lone tray icon would look like nothing
+  // happened. Writing the config file marks that first run as done. An
+  // autostart launch (--hidden) never counts, so sign-in stays silent.
+  if (firstRun && !process.argv.includes('--hidden')) {
+    config.save({});
+    windows.showSettings(ICON_PATH);
+  }
 
   // Small delay so the tray and timer are fully wired before firing a preview break.
   if (process.argv.includes('--preview')) {
