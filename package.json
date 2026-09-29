@@ -48,9 +48,9 @@
       "artifactName": "LookOutsideTimer-Setup-${version}.${ext}"
     },
     "appx": {
-      "identityName": "REPLACE_ME_Package/Identity/Name",
-      "publisher": "CN=REPLACE_ME_Package/Identity/Publisher",
-      "publisherDisplayName": "REPLACE_ME_Package/Properties/PublisherDisplayName",
+      "identityName": "Brendaniam.LookOutsideReminder",
+      "publisher": "CN=E9DA397B-6A5C-4151-98C6-93DD15F901B8",
+      "publisherDisplayName": "Brendaniam",
       "applicationId": "LookOutsideReminder",
       "displayName": "Look Outside Reminder",
       "backgroundColor": "transparent",
