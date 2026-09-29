@@ -11,6 +11,7 @@
     "icon": "node scripts/gen-icon.js",
     "start": "electron .",
     "dist": "npm run icon && electron-builder --win",
+    "dist:store": "npm run icon && electron-builder --win appx",
     "pack": "npm run icon && electron-builder --win --dir",
     "test": "electron scripts/selftest.js",
     "autostart:on": "node scripts/autostart.js on",
@@ -45,6 +46,21 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "artifactName": "LookOutsideTimer-Setup-${version}.${ext}"
+    },
+    "appx": {
+      "identityName": "REPLACE_ME_Package/Identity/Name",
+      "publisher": "CN=REPLACE_ME_Package/Identity/Publisher",
+      "publisherDisplayName": "REPLACE_ME_Package/Properties/PublisherDisplayName",
+      "applicationId": "LookOutsideReminder",
+      "displayName": "Look Outside Reminder",
+      "backgroundColor": "transparent",
+      "languages": [
+        "en-US"
+      ],
+      "minVersion": "10.0.17763.0",
+      "maxVersionTested": "10.0.26100.0",
+      "customExtensionsPath": "build/appx-extensions.xml",
+      "artifactName": "LookOutsideReminder-${version}.${ext}"
     }
   },
   "devDependencies": {

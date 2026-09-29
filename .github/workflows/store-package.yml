@@ -1,0 +1,37 @@
+# Builds the Microsoft Store (MSIX) package.
+#
+# This runs in CI rather than locally because Smart App Control on the dev
+# laptop blocks makeappx.exe, the SDK tool that packs the MSIX. The package is
+# unsigned on purpose: the Store signs it on submission.
+#
+# Download the .appx from the run's "Artifacts" section and upload it in
+# Partner Center.
+
+name: Store package
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    tags: ['v*']
+
+jobs:
+  appx:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run dist:store
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-package
+          path: dist/*.appx
+          if-no-files-found: error

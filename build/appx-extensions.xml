@@ -1,0 +1,7 @@
+        <!-- Inserted into the MSIX manifest's <Extensions> by electron-builder
+             (appx.customExtensionsPath). The app turns this task on and off
+             from its "Start automatically" setting: see src/main/storeStartup.js,
+             whose TASK_ID must match TaskId here. -->
+        <desktop:Extension Category="windows.startupTask" Executable="app\Look Outside Timer.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="LookOutsideStartup" Enabled="true" DisplayName="Look Outside Reminder" />
+        </desktop:Extension>

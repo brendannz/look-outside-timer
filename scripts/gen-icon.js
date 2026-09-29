@@ -1,9 +1,11 @@
-// Generates build/icon.ico with no external dependencies.
+// Generates build/icon.ico, plus the PNG tile images in build/appx/ that the
+// Microsoft Store package needs, with no external dependencies.
 // Draws a pink monitor showing a clock face.
-// Uncompressed 32bpp BGRA entries, which every Windows version understands.
+// ICO entries are uncompressed 32bpp BGRA, which every Windows version understands.
 
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 
 const SIZES = [16, 24, 32, 48, 64, 128, 256];
 const SS = 3; // supersample factor per axis
@@ -82,8 +84,8 @@ function sample(u, v, size) {
   return opaque(mixRgb(SCREEN_TOP, SCREEN_BOT, (v - 0.135) / (0.715 - 0.135)));
 }
 
-// Renders one size into a bottom-up BGRA buffer, supersampled for smooth edges.
-function renderBgraBottomUp(size) {
+// Renders one size into a top-down RGBA buffer, supersampled for smooth edges.
+function renderRgba(size) {
   const buf = Buffer.alloc(size * size * 4);
   const n = SS * SS;
 
@@ -108,12 +110,28 @@ function renderBgraBottomUp(size) {
       // Un-premultiply: divide by the summed alpha coverage (alphaSum / 255),
       // not by the sample count.
       const scale = alphaSum > 0 ? 255 / alphaSum : 0;
-      const row = size - 1 - y; // ICO stores rows bottom-up
-      const o = (row * size + x) * 4;
-      buf[o] = Math.round(Math.min(b * scale, 255));
+      const o = (y * size + x) * 4;
+      buf[o] = Math.round(Math.min(r * scale, 255));
       buf[o + 1] = Math.round(Math.min(g * scale, 255));
-      buf[o + 2] = Math.round(Math.min(r * scale, 255));
+      buf[o + 2] = Math.round(Math.min(b * scale, 255));
       buf[o + 3] = Math.round(alphaSum / n);
+    }
+  }
+  return buf;
+}
+
+// ICO wants rows bottom-up and channels in BGRA order.
+function renderBgraBottomUp(size) {
+  const rgba = renderRgba(size);
+  const buf = Buffer.alloc(rgba.length);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const src = (y * size + x) * 4;
+      const dst = ((size - 1 - y) * size + x) * 4;
+      buf[dst] = rgba[src + 2];
+      buf[dst + 1] = rgba[src + 1];
+      buf[dst + 2] = rgba[src];
+      buf[dst + 3] = rgba[src + 3];
     }
   }
   return buf;
@@ -162,8 +180,84 @@ function buildIco(sizes) {
   return Buffer.concat([dir, ...entries, ...images]);
 }
 
+// --- PNG tile assets for the Microsoft Store (MSIX) package ---------------
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (const byte of buf) c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length, 0);
+  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body), 0);
+  return Buffer.concat([len, body, crc]);
+}
+
+function encodePng(width, height, rgba) {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 6; // colour type: RGBA
+  // compression, filter and interlace all 0
+
+  // Each scanline is prefixed with filter type 0 (none).
+  const stride = width * 4;
+  const raw = Buffer.alloc((stride + 1) * height);
+  for (let y = 0; y < height; y++) {
+    rgba.copy(raw, y * (stride + 1) + 1, y * stride, (y + 1) * stride);
+  }
+
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', zlib.deflateSync(raw, { level: 9 })),
+    pngChunk('IEND', Buffer.alloc(0))
+  ]);
+}
+
+// The icon at `iconSize`, centred on a transparent width x height canvas.
+function renderTile(width, height, iconSize) {
+  const icon = renderRgba(iconSize);
+  const out = Buffer.alloc(width * height * 4);
+  const ox = Math.floor((width - iconSize) / 2);
+  const oy = Math.floor((height - iconSize) / 2);
+  for (let y = 0; y < iconSize; y++) {
+    icon.copy(out, ((oy + y) * width + ox) * 4, y * iconSize * 4, (y + 1) * iconSize * 4);
+  }
+  return encodePng(width, height, out);
+}
+
+// Names electron-builder maps into the manifest. Tiles get some padding, as
+// Start and the taskbar expect; the unplated 44px variant is what the taskbar
+// and Start's app list show, drawn without the background-colour plate.
+const TILES = [
+  ['StoreLogo.png', 50, 50, 50],
+  ['Square44x44Logo.png', 44, 44, 44],
+  ['Square44x44Logo.targetsize-44_altform-unplated.png', 44, 44, 44],
+  ['Square150x150Logo.png', 150, 150, 100],
+  ['Wide310x150Logo.png', 310, 150, 100]
+];
+
 const outDir = path.join(__dirname, '..', 'build');
 fs.mkdirSync(outDir, { recursive: true });
 const out = path.join(outDir, 'icon.ico');
 fs.writeFileSync(out, buildIco(SIZES));
 console.log(`Wrote ${out} (${SIZES.join(', ')} px)`);
+
+const appxDir = path.join(outDir, 'appx');
+fs.mkdirSync(appxDir, { recursive: true });
+for (const [name, width, height, iconSize] of TILES) {
+  fs.writeFileSync(path.join(appxDir, name), renderTile(width, height, iconSize));
+}
+console.log(`Wrote ${TILES.length} Store tile images to ${appxDir}`);
