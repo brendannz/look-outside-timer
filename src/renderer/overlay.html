@@ -4,10 +4,13 @@
 <meta charset="utf-8" />
 <title>Break</title>
 <style>
+  /* The icon's pinks, pushed down to a dim plum so a break never floods the
+     room with light. Pink is only a faint glow and accent. */
   :root {
-    --ink: #f2f6fb;
-    --muted: rgba(242, 246, 251, 0.55);
-    --line: rgba(242, 246, 251, 0.16);
+    --ink: #fbe9f1;
+    --muted: rgba(251, 233, 241, 0.52);
+    --line: rgba(255, 150, 194, 0.2);
+    --pink: #ff5f9e;
   }
 
   * { box-sizing: border-box; }
@@ -27,7 +30,7 @@
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(120% 90% at 50% 42%, rgba(30, 46, 66, 0.94) 0%, rgba(7, 10, 15, 0.96) 70%);
+      radial-gradient(120% 90% at 50% 42%, rgba(58, 14, 36, 0.95) 0%, rgba(14, 5, 10, 0.97) 70%);
     animation: fade 420ms ease-out;
   }
 
@@ -70,7 +73,7 @@
     line-height: 1;
     letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums;
-    text-shadow: 0 8px 60px rgba(120, 190, 255, 0.18);
+    text-shadow: 0 8px 60px rgba(255, 95, 158, 0.22);
   }
 
   .hint {
@@ -86,7 +89,7 @@
     font-size: clamp(17px, 2vw, 28px);
     font-weight: 300;
     line-height: 1.5;
-    color: rgba(242, 246, 251, 0.9);
+    color: rgba(251, 233, 241, 0.88);
   }
 
   blockquote cite {
@@ -112,7 +115,7 @@
     font: inherit;
     font-size: 15px;
     color: var(--ink);
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 150, 194, 0.07);
     border: 1px solid var(--line);
     border-radius: 10px;
     cursor: pointer;
@@ -120,8 +123,8 @@
   }
 
   button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(242, 246, 251, 0.4);
+    background: rgba(255, 150, 194, 0.15);
+    border-color: rgba(255, 150, 194, 0.45);
   }
 
   button:disabled {
@@ -134,7 +137,7 @@
     position: absolute;
     inset: 0;
     width: 0;
-    background: rgba(255, 255, 255, 0.13);
+    background: rgba(255, 150, 194, 0.14);
   }
 
   button.arming .fill { animation: arm linear forwards; }
@@ -157,13 +160,14 @@
     right: 0;
     bottom: 0;
     height: 3px;
-    background: rgba(255, 255, 255, 0.09);
+    background: rgba(255, 150, 194, 0.1);
   }
 
   .progress .bar {
     height: 100%;
     width: 0;
-    background: linear-gradient(90deg, #6fb3f0, #9ee7b8);
+    background: linear-gradient(90deg, #c71562, #ff96c2);
+    opacity: 0.8;
     transition: width 1s linear;
   }
 
