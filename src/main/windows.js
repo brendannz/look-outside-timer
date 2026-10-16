@@ -167,7 +167,7 @@ function showSettings(iconPath) {
     title: 'Look Outside Reminder',
     icon: iconPath,
     autoHideMenuBar: true,
-    backgroundColor: '#fff6fa',
+    backgroundColor: '#f8f2f3', // --n-100 in settings.html, so the window doesn't flash a different shade while loading
     show: false,
     webPreferences
   });
