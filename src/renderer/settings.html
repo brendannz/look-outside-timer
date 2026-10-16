@@ -22,7 +22,7 @@
 
   body {
     margin: 0;
-    padding: 0 26px 32px;
+    padding: 0 26px 12px;
     background: var(--bg);
     color: var(--ink);
     font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
@@ -147,8 +147,10 @@
     align-items: center;
     position: sticky;
     bottom: 0;
-    padding-top: 14px;
-    background: linear-gradient(rgba(255, 246, 250, 0), var(--bg) 40%);
+    /* Bottom padding lives here, not on body, so the buttons keep their
+       margin while stuck to the window edge mid-scroll. */
+    padding: 14px 0 20px;
+    background: linear-gradient(rgba(255, 246, 250, 0), var(--bg) 30%);
   }
 
   button {
