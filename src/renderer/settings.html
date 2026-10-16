@@ -174,16 +174,6 @@
 
   button.primary:hover { background: #ad0f53; }
 
-  .saved {
-    color: var(--accent);
-    font-weight: 600;
-    font-size: 13px;
-    opacity: 0;
-    transition: opacity 200ms;
-  }
-
-  .saved.show { opacity: 1; }
-
   .detected {
     margin-top: 10px;
     font-size: 12.5px;
@@ -297,10 +287,9 @@
   </section>
 
   <div class="bar">
-    <button class="primary" id="save">Save</button>
+    <button class="primary" id="save">Save &amp; close</button>
     <button id="preview">Preview a break</button>
-    <button id="close">Close</button>
-    <span class="saved" id="saved">Saved</span>
+    <button id="close" title="Esc">Close &amp; discard changes</button>
   </div>
 
 <script>
@@ -335,9 +324,7 @@
       .filter(Boolean);
 
     await api.saveConfig(patch);
-    $('saved').classList.add('show');
-    setTimeout(() => $('saved').classList.remove('show'), 1600);
-    refreshQuoteStats();
+    api.closeWindow();
   }
 
   const fmt = (s) => Math.floor(s / 60) + ':' + String(Math.round(s) % 60).padStart(2, '0');
@@ -369,6 +356,12 @@
   $('save').addEventListener('click', save);
   $('close').addEventListener('click', () => api.closeWindow());
   $('preview').addEventListener('click', () => api.previewBreak());
+
+  // Esc is the same as "Close & discard changes": nothing is saved until the
+  // Save button is used, so closing is all it takes.
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') api.closeWindow();
+  });
 
   $('detect').addEventListener('click', async () => {
     $('detected').textContent = 'Checking…';
