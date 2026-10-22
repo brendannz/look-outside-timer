@@ -41,6 +41,8 @@ app.on('second-instance', (_event, argv) => {
 // Tray app: closing the settings window must not quit.
 app.on('window-all-closed', () => {});
 
+app.on('will-quit', () => callDetector.stop());
+
 // In a packaged build the icon lives inside app.asar, and electron-builder also
 // unpacks it to app.asar.unpacked. Try both, and reject an image that failed to
 // decode: a broken tray icon renders as nothing at all rather than as an error,

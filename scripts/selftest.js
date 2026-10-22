@@ -257,7 +257,9 @@ function testQuotes() {
 // --- call detection (against the real machine) ----------------------------
 
 async function testCallDetection() {
-  console.log('\n# call detection reads the live Windows consent store');
+  console.log('\n# call detection reads the live device watcher and consent store');
+  ok('device watcher starts and reports', await callDetector.warmUp(), 'no snapshot within 15s');
+
   const all = await callDetector.detectAll();
   ok('registry query returns without throwing', Array.isArray(all), 'not an array');
   console.log(`      currently holding mic/camera: ${all.length ? all.join(', ') : '(nothing)'}`);
@@ -270,6 +272,7 @@ async function testCallDetection() {
   // Nothing should match a deliberately impossible name.
   const none = await callDetector.detect({ callApps: ['zzz-not-a-real-app'], watchWebcam: true });
   check('unknown app name matches nothing', none.inCall, false);
+  callDetector.stop();
 }
 
 app.whenReady().then(async () => {
