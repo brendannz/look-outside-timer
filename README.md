@@ -67,16 +67,22 @@ back from lock or sleep also resets it.
 
 ## How call detection works
 
-Windows records every microphone and camera grant under:
+The app asks Windows which processes are using a camera or microphone right
+now, from two sources:
 
-```
-HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore
-```
+- **`src/main/deviceWatch.ps1`**, a long-running PowerShell helper that queries
+  the device stacks directly: Media Foundation's sensor activity monitor for
+  cameras, and the WASAPI capture session list for microphones. It reports each
+  process by exe name, package family name, and, for WebView2 helpers such as
+  the ones new Teams uses, the host app. It never opens or reads from a device.
+- **The ConsentStore registry** at
+  `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore`.
+  While an app is streaming, its `LastUsedTimeStop` is `0`. Windows 11 26H2
+  stopped updating these values live (they now only change long after use, if
+  at all), so this is kept only as a fallback for older builds.
 
-Each app subkey has `LastUsedTimeStart` and `LastUsedTimeStop`. While an app is
-actively streaming, `LastUsedTimeStop` is `0`. This is the same data behind the
-"an app is using your camera" indicator, which means one check covers Teams,
-Zoom, and Google Meet in **any** browser without matching on window titles.
+Neither source matches on window titles, so one check covers Teams, Zoom, and
+Google Meet in **any** browser.
 
 The watch list defaults to Teams, Zoom, Chrome, Edge, Brave and Firefox, and is
 editable in Settings. Apps such as Notion, Slack and Windows voice dictation also
@@ -96,7 +102,7 @@ npm test
 45 checks covering the scheduler (countdown, pre-warning, idle reset, call hold,
 post-call grace, a call starting mid-break, skip, postpone, manual pause), the
 quote library's no-repeat guarantee, and live call detection against the real
-registry.
+device watcher and registry.
 
 ## Building an installer
 
@@ -164,7 +170,8 @@ Settings are stored at `%APPDATA%\Look Outside Timer\config.json` (tray menu →
 ```
 src/main/main.js          tray, IPC, wiring
 src/main/timer.js         the scheduling state machine
-src/main/callDetector.js  ConsentStore registry reader
+src/main/callDetector.js  call detection (device watcher + ConsentStore)
+src/main/deviceWatch.ps1  live camera/mic usage helper
 src/main/config.js        settings persistence
 src/main/quotes.js        160 quotes + no-repeat selection
 src/main/windows.js       overlay / pre-warning / settings windows
